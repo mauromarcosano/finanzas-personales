@@ -1,0 +1,9 @@
+{
+  "name": "finanzas-personales-root",
+  "version": "1.0.0",
+  "main": "backend/index.js",
+  "scripts": {
+    "start": "cd backend && npm start",
+    "dev": "cd backend && npm run dev"
+  }
+}
