@@ -1,0 +1,27 @@
+[Version]
+Class=IExpress
+SEDVersion=3
+[Options]
+PackagePurpose=InstallApp
+ShowInstallProgramWindow=0
+HideExtractAnimation=1
+UseLongFileName=1
+InsideCompressed=1
+CAB_FixedSize=0
+CAB_ResvSpace=0
+RebootMode=N
+InstallPrompt=
+DisplayLicense=
+FinishMessage=
+TargetName=c:\Users\mauro\Desktop\Coding\finanzas-personales\finanzas-personales-desktop\Instalador_Control_Finanzas.exe
+FriendlyName=Instalador Control de Finanzas
+AppLaunched=setup.bat
+PostInstallCmd=<None>
+AdminQuietInstCmd=
+UserQuietInstCmd=
+SourceFiles=SourceFiles
+[SourceFiles]
+SourceFiles0=c:\Users\mauro\Desktop\Coding\finanzas-personales\finanzas-personales-desktop\installer\
+[SourceFiles0]
+%FILE0%="bot-gastos.exe"
+%FILE1%="setup.bat"

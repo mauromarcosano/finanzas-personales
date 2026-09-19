@@ -1,0 +1,38 @@
+# Dependencies
+node_modules/
+**/node_modules/
+
+# Environment variables
+.env
+.env.*
+!.env.example
+**/.env
+**/.env.*
+!**/.env.example
+
+# Build & Dist outputs
+dist/
+build/
+**/dist/
+**/build/
+
+# Logs
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# IDE & System files
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db
+
+# Installers or generated binaries
+*.exe
+
+# Database files
+*.sqlite
+*.sqlite3
+*.db
+
