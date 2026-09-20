@@ -459,11 +459,7 @@ bot.on('message', async (msg) => {
   const voice = msg.voice;
 
   if (!text && !voice) return;
-
-  // Verificación de identidad
-  //if (!USUARIOS_AUTORIZADOS.includes(chatId)) {
-  //return bot.sendMessage(chatId, "⚠️ Disculpá, no estás autorizado para registrar gastos en este servidor.");
-  //}
+  console.log(`📩 [Telegram] Mensaje de ${chatId}:`, text ? `"${text}"` : '[Nota de voz]');
 
   if (text.startsWith('/start')) {
     return bot.sendMessage(chatId, '¡Hola! Soy tu bot de gastos. Escríbeme qué gastaste (ej: "Gasté 5000 en el kiosco") o mándame un audio, y lo guardaré limpio en tu base de datos.\n\nPuedes usar /resumen para ver tus métricas del mes.');
