@@ -319,6 +319,9 @@ const fallbackLocalParse = (rawText) => {
 
     let monto = null;
 
+    const bigNumMatch = clean.match(/\b(\d{1,3}(?:\.\d{3})+|\d{4,8})\b/);
+    const kMatch = clean.match(/\b(\d+(?:[.,]\d+)?)\s*k\b/i);
+
     if (/media\s+luca/i.test(clean)) {
       monto = 500;
       clean = clean.replace(/media\s+luca/gi, '').trim();
@@ -337,10 +340,12 @@ const fallbackLocalParse = (rawText) => {
       const m = clean.match(/(\d+(?:[.,]\d+)?)\s*lucas?/i);
       monto = parseFloat(m[1].replace(',', '.')) * 1000;
       clean = clean.replace(m[0], '').trim();
-    } else if (/(\d+(?:[.,]\d+)?)\s*k\b/i.test(clean)) {
-      const m = clean.match(/(\d+(?:[.,]\d+)?)\s*k\b/i);
-      monto = parseFloat(m[1].replace(',', '.')) * 1000;
-      clean = clean.replace(m[0], '').trim();
+    } else if (bigNumMatch && (!kMatch || parseFloat(bigNumMatch[1].replace(/\./g, '')) >= 1000)) {
+      monto = parseFloat(bigNumMatch[1].replace(/\./g, ''));
+      clean = clean.replace(bigNumMatch[0], '').trim();
+    } else if (kMatch) {
+      monto = parseFloat(kMatch[1].replace(',', '.')) * 1000;
+      clean = clean.replace(kMatch[0], '').trim();
     } else if (/(\d+(?:[.,]\d+)?)\s*mil\b/i.test(clean)) {
       const m = clean.match(/(\d+(?:[.,]\d+)?)\s*mil\b/i);
       monto = parseFloat(m[1].replace(',', '.')) * 1000;
@@ -442,16 +447,37 @@ const fallbackLocalParse = (rawText) => {
 
 
 
-const bot = new TelegramBot(token, { polling: true });
-console.log('✅ Bot de Telegram inicializado y escuchando mensajes...');
+const RENDER_URL = process.env.RENDER_EXTERNAL_URL || process.env.WEBHOOK_URL;
 
-bot.on('polling_error', (err) => {
-  if (err.code === 'ETELEGRAM' && err.message.includes('409 Conflict')) {
-    console.warn('⚠️ AVISO: Conflicto 409 de Telegram: Hay otra terminal o proceso ejecutando el bot con este token en simultáneo.');
-  } else {
-    console.error('Telegram polling error:', err.message);
-  }
-});
+let bot;
+if (RENDER_URL) {
+  const cleanUrl = RENDER_URL.replace(/\/$/, '');
+  const webhookPath = `/api/telegram-webhook`;
+  const fullWebhookUrl = `${cleanUrl}${webhookPath}`;
+
+  bot = new TelegramBot(token);
+  bot.setWebHook(fullWebhookUrl).then(() => {
+    console.log(`🌐 Webhook de Telegram registrado exitosamente en: ${fullWebhookUrl}`);
+  }).catch(err => {
+    console.error('❌ Error registrando Webhook en Telegram:', err.message);
+  });
+
+  app.post(webhookPath, (req, res) => {
+    bot.processUpdate(req.body);
+    res.sendStatus(200);
+  });
+} else {
+  bot = new TelegramBot(token, { polling: true });
+  console.log('✅ Bot de Telegram inicializado localmente en modo Polling...');
+
+  bot.on('polling_error', (err) => {
+    if (err.code === 'ETELEGRAM' && err.message.includes('409 Conflict')) {
+      console.warn('⚠️ AVISO: Conflicto 409 de Telegram: Hay otra terminal o proceso ejecutando el bot con este token en simultáneo.');
+    } else {
+      console.error('Telegram polling error:', err.message);
+    }
+  });
+}
 
 bot.on('message', async (msg) => {
   const chatId = msg.chat.id;
