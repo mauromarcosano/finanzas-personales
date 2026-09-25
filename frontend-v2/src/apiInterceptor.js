@@ -22,10 +22,12 @@ window.fetch = async (...args) => {
   
   if (response.status === 401) {
     // Si la API devuelve 401, el token es inválido o expiró
-    // Excepción: no forzamos reload en login/setup o status
     if (!resource.includes('/api/auth/')) {
+      const hadToken = !!localStorage.getItem(STORAGE_TOKEN_KEY);
+      if (hadToken) {
         localStorage.removeItem(STORAGE_TOKEN_KEY);
         window.location.reload();
+      }
     }
   }
   

@@ -83,6 +83,7 @@ function App() {
   };
 
   useEffect(() => {
+    if (!isAuthenticated) return;
     fetchGastos();
     fetchCuotas();
     fetchSuscripciones();
@@ -94,7 +95,7 @@ function App() {
       fetchSuscripciones();
     }, 4000);
     return () => clearInterval(interval);
-  }, [currentDate]);
+  }, [currentDate, isAuthenticated]);
 
   const displayGastos = useMemo(() => {
     const today = new Date();
