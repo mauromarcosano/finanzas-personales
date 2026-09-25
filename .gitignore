@@ -36,3 +36,6 @@ Thumbs.db
 *.sqlite3
 *.db
 
+# WhatsApp Web JS auth data
+.wwebjs_auth/
+.wwebjs_cache/

@@ -215,6 +215,14 @@ app.listen(PORT, () => {
   console.log(`✅ API escuchando en el puerto ${PORT} (Conectado con Dashboard Web)`);
 });
 
+// Inicializar WhatsApp Bot
+try {
+  const { initWhatsAppBot } = require('./whatsapp.service');
+  initWhatsAppBot();
+} catch (e) {
+  console.error('❌ Error al inicializar el bot de WhatsApp:', e);
+}
+
 // --- 🧠 INICIALIZAMOS LA IA DE GEMINI ---
 const cleanGeminiKey = (geminiApiKey || '').replace(/['" ]/g, '');
 const genAI = new GoogleGenerativeAI(cleanGeminiKey);
