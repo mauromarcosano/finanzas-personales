@@ -1,4 +1,5 @@
 import { useState, useMemo, useRef, useEffect } from 'react';
+import { API_BASE } from '../../config';
 import { 
   X, 
   Plus, 
@@ -88,7 +89,7 @@ export default function ConfigModal({ isOpen, onClose, categorias, setCategorias
     setSaving(true);
     setSaveSuccess(false);
     try {
-      const res = await fetch('http://localhost:3000/api/categorias', {
+      const res = await fetch(`${API_BASE}/api/categorias`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ categorias: newConfig })

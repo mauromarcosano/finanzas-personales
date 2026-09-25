@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { Sparkles, X, RefreshCw, Lightbulb, AlertTriangle, CheckCircle, TrendingUp } from 'lucide-react';
+import { API_BASE } from '../../config';
 
 const AiModal = ({ 
   isOpen, 
@@ -19,7 +20,7 @@ const AiModal = ({
     setLoading(true);
     setError(null);
     try {
-      const res = await fetch('http://localhost:3000/api/ai/opinion', {
+      const res = await fetch(`${API_BASE}/api/ai/opinion`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({

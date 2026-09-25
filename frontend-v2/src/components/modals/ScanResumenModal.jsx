@@ -1,7 +1,8 @@
 import React, { useState } from 'react';
 import { FileText, Upload, Sparkles, CheckCircle2, AlertCircle, X, Check, RefreshCw, ChevronRight } from 'lucide-react';
+import { API_BASE } from '../../config';
 
-const API_URL = 'http://localhost:3000/api/ai';
+const API_URL = `${API_BASE}/api/ai`;
 
 const ScanResumenModal = ({ isOpen, onClose, onImportSuccess }) => {
   const [selectedFile, setSelectedFile] = useState(null);

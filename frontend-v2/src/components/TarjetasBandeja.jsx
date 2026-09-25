@@ -1,7 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { CreditCard, Plus, Calendar, Clock, CheckCircle2, Trash2, Zap, Pencil } from 'lucide-react';
+import { API_BASE } from '../config';
 
-const API_URL = 'http://localhost:3000/api';
+const API_URL = `${API_BASE}/api`;
 
 const TarjetasBandeja = ({ cuotasPendientes, fetchCuotas, setIsCreating, currentDate, suscripciones = [], fetchSuscripciones }) => {
   const [config, setConfig] = useState({ fecha_cierre: '', fecha_vencimiento: '' });

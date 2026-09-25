@@ -11,7 +11,9 @@ import ReminderModal from './components/modals/ReminderModal';
 import ScanResumenModal from './components/modals/ScanResumenModal';
 import ConfigModal from './components/modals/ConfigModal';
 
-const API_URL = 'http://localhost:3000/api/gastos';
+import { API_BASE } from './config';
+
+const API_URL = `${API_BASE}/api/gastos`;
 
 function App() {
   const [gastos, setGastos] = useState([]);
@@ -32,7 +34,7 @@ function App() {
 
   const fetchCuotas = async () => {
     try {
-      const res = await fetch('http://localhost:3000/api/cuotas');
+      const res = await fetch(`${API_BASE}/api/cuotas`);
       if (res.ok) {
         const data = await res.json();
         setCuotasPendientes(data);
@@ -44,7 +46,7 @@ function App() {
 
   const fetchSuscripciones = async () => {
     try {
-      const res = await fetch('http://localhost:3000/api/suscripciones');
+      const res = await fetch(`${API_BASE}/api/suscripciones`);
       if (res.ok) {
         setSuscripciones(await res.json());
       }
@@ -69,7 +71,7 @@ function App() {
 
   const fetchCategoriasConfig = async () => {
     try {
-      const res = await fetch('http://localhost:3000/api/categorias');
+      const res = await fetch(`${API_BASE}/api/categorias`);
       if (res.ok) {
         setCategoriasConfig(await res.json());
       }
@@ -302,7 +304,7 @@ function App() {
 
   const liquidarCuota = async (id) => {
     try {
-      const res = await fetch(`http://localhost:3000/api/cuotas/${id}/pagar`, { method: 'POST' });
+      const res = await fetch(`${API_BASE}/api/cuotas/${id}/pagar`, { method: 'POST' });
       if (res.ok) {
         fetchCuotas();
       } else {

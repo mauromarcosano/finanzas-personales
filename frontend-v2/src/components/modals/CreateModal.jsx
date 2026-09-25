@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { Plus } from 'lucide-react';
+import { API_BASE } from '../../config';
 
 const CreateModal = ({ currentTab, setIsCreating, handleSaveCreate, categoriasConfig }) => {
   const [isSuscripcion, setIsSuscripcion] = useState(false);
@@ -20,7 +21,7 @@ const CreateModal = ({ currentTab, setIsCreating, handleSaveCreate, categoriasCo
       };
       
       try {
-        const res = await fetch('http://localhost:3000/api/suscripciones', {
+        const res = await fetch(`${API_BASE}/api/suscripciones`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify(data)
