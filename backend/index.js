@@ -104,6 +104,15 @@ const initDB = async () => {
       ON CONFLICT (id) DO NOTHING;
     `);
 
+    await pool.query(`
+      CREATE TABLE IF NOT EXISTS telegram_users (
+        chat_id BIGINT PRIMARY KEY,
+        first_name TEXT,
+        username TEXT,
+        last_active TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+      );
+    `);
+
     await pool.query('CREATE TABLE IF NOT EXISTS categorias_config (id INT PRIMARY KEY DEFAULT 1, config JSONB NOT NULL);');
     const defaultCats = [
       { id: 'Supermercado_y_Alimentacion', label: 'Supermercado y Alimentación', subcategorias: [ { id: 'Compra_Fuerte_Mes', label: 'Compra Fuerte Mes' }, { id: 'Carniceria_Verduleria', label: 'Carnicería/Verdulería' }, { id: 'Panaderia', label: 'Panadería' } ] },
@@ -154,7 +163,11 @@ const tarjetaConfigRouter = require('./routes/tarjeta_config');
 const suscripcionesRouter = require('./routes/suscripciones');
 const aiRouter = require('./routes/ai');
 const categoriasRouter = require('./routes/categorias');
-const { router: recordatorioRouter, setSendTestNotification } = require('./routes/recordatorio');
+const { router: recordatorioRouter, setSendTestNotification, setTriggerReminder } = require('./routes/recordatorio');
+
+app.get('/', (req, res) => {
+  res.json({ status: 'ok', message: 'API Finanzas Personales activa 🚀' });
+});
 
 app.use('/api/gastos', gastosRouter);
 app.use('/api/cuotas', cuotasRouter);
@@ -484,6 +497,16 @@ bot.on('message', async (msg) => {
   const text = msg.text || '';
   const voice = msg.voice;
 
+  if (chatId) {
+    try {
+      await pool.query(`
+        INSERT INTO telegram_users (chat_id, first_name, username, last_active)
+        VALUES ($1, $2, $3, CURRENT_TIMESTAMP)
+        ON CONFLICT (chat_id) DO UPDATE SET last_active = CURRENT_TIMESTAMP, first_name = COALESCE(EXCLUDED.first_name, telegram_users.first_name), username = COALESCE(EXCLUDED.username, telegram_users.username);
+      `, [chatId, msg.from?.first_name || '', msg.from?.username || '']);
+    } catch (e) {}
+  }
+
   if (!text && !voice) return;
   console.log(`📩 [Telegram] Mensaje de ${chatId}:`, text ? `"${text}"` : '[Nota de voz]');
 
@@ -564,7 +587,7 @@ bot.on('message', async (msg) => {
         SELECT categoria, SUM(monto) as total
         FROM gastos
         WHERE chat_id = $1
-        AND DATE(fecha) = CURRENT_DATE
+        AND (fecha AT TIME ZONE 'America/Argentina/Buenos_Aires')::date = (CURRENT_TIMESTAMP AT TIME ZONE 'America/Argentina/Buenos_Aires')::date
         GROUP BY categoria
         ORDER BY total DESC;
       `;
@@ -822,7 +845,8 @@ const enviarRecordatorioTelegram = async (targetChatId, isTest = false) => {
     const todayRes = await pool.query(`
       SELECT COALESCE(SUM(monto), 0) as total, COUNT(id) as cantidad
       FROM gastos
-      WHERE chat_id = $1 AND fecha >= CURRENT_DATE;
+      WHERE chat_id = $1 
+      AND (fecha AT TIME ZONE 'America/Argentina/Buenos_Aires')::date = (CURRENT_TIMESTAMP AT TIME ZONE 'America/Argentina/Buenos_Aires')::date;
     `, [targetChatId]);
 
     const totalHoy = parseFloat(todayRes.rows[0].total || 0);
@@ -851,32 +875,63 @@ const enviarRecordatorioTelegram = async (targetChatId, isTest = false) => {
     });
     console.log(`⏰ Recordatorio enviado con éxito a Telegram (${targetChatId})`);
   } catch (err) {
-    console.error('Error al enviar el recordatorio:', err);
+    console.error('Error al enviar el recordatorio:', err.message || err);
   }
 };
 
 // Helper para obtener chat_ids de usuarios a notificar
 const obtenerChatIdsNotificaciones = async () => {
   const ids = new Set(USUARIOS_AUTORIZADOS.filter(id => id && id !== 0));
+
   try {
-    const res = await pool.query('SELECT DISTINCT chat_id FROM gastos WHERE chat_id IS NOT NULL AND chat_id != 0;');
-    res.rows.forEach(r => {
+    const resUsers = await pool.query('SELECT chat_id FROM telegram_users WHERE chat_id IS NOT NULL AND chat_id != 0;');
+    resUsers.rows.forEach(r => {
       const cid = parseInt(r.chat_id, 10);
       if (!isNaN(cid) && cid !== 0) ids.add(cid);
     });
   } catch (e) {}
+
+  try {
+    const resGastos = await pool.query('SELECT DISTINCT chat_id FROM gastos WHERE chat_id IS NOT NULL AND chat_id != 0;');
+    resGastos.rows.forEach(r => {
+      const cid = parseInt(r.chat_id, 10);
+      if (!isNaN(cid) && cid !== 0) ids.add(cid);
+    });
+  } catch (e) {}
+
+  try {
+    const resCompras = await pool.query('SELECT DISTINCT chat_id FROM compras_tarjeta WHERE chat_id IS NOT NULL AND chat_id != 0;');
+    resCompras.rows.forEach(r => {
+      const cid = parseInt(r.chat_id, 10);
+      if (!isNaN(cid) && cid !== 0) ids.add(cid);
+    });
+  } catch (e) {}
+
   return Array.from(ids);
 };
 
-// Registrar handler para botón de prueba desde el Dashboard Web
+// Registrar handlers de la API de recordatorio
 setSendTestNotification(async () => {
   const chatIds = await obtenerChatIdsNotificaciones();
   if (chatIds.length === 0) {
-    throw new Error('No se encontraron usuarios activos para enviar la notificación.');
+    throw new Error('No se encontraron usuarios de Telegram registrados. Enviá un mensaje o /start al Bot de Telegram primero.');
   }
   for (const cid of chatIds) {
     await enviarRecordatorioTelegram(cid, true);
   }
+});
+
+setTriggerReminder(async (forced = false) => {
+  const configRes = await pool.query('SELECT hora, activo FROM recordatorio_config WHERE id = 1;');
+  if (configRes.rows.length === 0) return { count: 0, message: 'Sin configuración' };
+  const { hora, activo } = configRes.rows[0];
+  if (!activo && !forced) return { count: 0, message: 'Recordatorios desactivados' };
+
+  const chatIds = await obtenerChatIdsNotificaciones();
+  for (const cid of chatIds) {
+    await enviarRecordatorioTelegram(cid, false);
+  }
+  return { count: chatIds.length, hora, activo };
 });
 
 // Respuestas a botones de Telegram (Inline Keyboard Callbacks)
@@ -904,7 +959,7 @@ bot.on('callback_query', async (query) => {
       const result = await pool.query(`
         SELECT descripcion, monto, categoria, metodo_pago
         FROM gastos
-        WHERE chat_id = $1 AND fecha >= CURRENT_DATE
+        WHERE chat_id = $1 AND (fecha AT TIME ZONE 'America/Argentina/Buenos_Aires')::date = (CURRENT_TIMESTAMP AT TIME ZONE 'America/Argentina/Buenos_Aires')::date
         ORDER BY fecha DESC;
       `, [chatId]);
 
@@ -976,10 +1031,13 @@ cron.schedule('* * * * *', async () => {
 
     const { hora } = configRes.rows[0];
     const now = new Date();
-    // Horario Argentina (UTC-3)
-    const argentinaTimeStr = now.toLocaleTimeString('es-AR', { timeZone: 'America/Argentina/Buenos_Aires', hour: '2-digit', minute: '2-digit', hour12: false });
-    const [hh, mm] = argentinaTimeStr.split(':');
-    const currentHHMM = `${hh.padStart(2, '0')}:${mm.padStart(2, '0')}`;
+    const formatter = new Intl.DateTimeFormat('en-GB', {
+      timeZone: 'America/Argentina/Buenos_Aires',
+      hour: '2-digit',
+      minute: '2-digit',
+      hour12: false
+    });
+    const currentHHMM = formatter.format(now);
 
     if (currentHHMM === hora && ultimoMinutoEnviado !== currentHHMM) {
       ultimoMinutoEnviado = currentHHMM;

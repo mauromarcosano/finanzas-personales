@@ -1,15 +1,18 @@
 import React, { useState, useEffect } from 'react';
-import { Bell, X, Check, Clock } from 'lucide-react';
+import { Bell, X, Check, Clock, Send } from 'lucide-react';
+
+const API_BASE = window.location.hostname === 'localhost' ? 'http://localhost:3000' : '';
 
 const ReminderModal = ({ isOpen, onClose }) => {
   const [hora, setHora] = useState('21:30');
   const [activo, setActivo] = useState(true);
   const [loading, setLoading] = useState(false);
+  const [testing, setTesting] = useState(false);
   const [message, setMessage] = useState(null);
 
   useEffect(() => {
     if (isOpen) {
-      fetch('/api/recordatorio')
+      fetch(`${API_BASE}/api/recordatorio`)
         .then(r => r.json())
         .then(data => {
           if (data.hora) setHora(data.hora);
@@ -26,7 +29,7 @@ const ReminderModal = ({ isOpen, onClose }) => {
     setLoading(true);
     setMessage(null);
     try {
-      const res = await fetch('/api/recordatorio', {
+      const res = await fetch(`${API_BASE}/api/recordatorio`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ hora, activo })
@@ -41,6 +44,24 @@ const ReminderModal = ({ isOpen, onClose }) => {
       setMessage({ type: 'error', text: 'No se pudo guardar la configuración.' });
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handleTestNotification = async () => {
+    setTesting(true);
+    setMessage(null);
+    try {
+      const res = await fetch(`${API_BASE}/api/recordatorio/test`, { method: 'POST' });
+      const data = await res.json();
+      if (res.ok && data.success) {
+        setMessage({ type: 'success', text: '📲 Notificación de prueba enviada a Telegram. ¡Revisá tu chat!' });
+      } else {
+        throw new Error(data.error || 'Error enviando prueba');
+      }
+    } catch (err) {
+      setMessage({ type: 'error', text: err.message || 'No se pudo enviar la notificación de prueba.' });
+    } finally {
+      setTesting(false);
     }
   };
 
@@ -111,6 +132,30 @@ const ReminderModal = ({ isOpen, onClose }) => {
               </select>
             </div>
 
+            {/* Botón para Probar Notificación de Telegram */}
+            <button
+              type="button"
+              onClick={handleTestNotification}
+              disabled={testing}
+              style={{
+                display: 'flex',
+                alignItems: 'center',
+                justify: 'center',
+                gap: '0.5rem',
+                padding: '0.65rem 1rem',
+                borderRadius: '0.5rem',
+                background: 'rgba(139, 92, 246, 0.15)',
+                color: '#8b5cf6',
+                border: '1px solid rgba(139, 92, 246, 0.3)',
+                fontWeight: 600,
+                fontSize: '0.85rem',
+                cursor: 'pointer',
+                transition: 'all 0.2s ease'
+              }}
+            >
+              <Send size={15} /> {testing ? 'Enviando prueba...' : '🧪 Enviar Notificación de Prueba Ahora'}
+            </button>
+
             {/* Feedback Message */}
             {message && (
               <div style={{
@@ -141,3 +186,4 @@ const ReminderModal = ({ isOpen, onClose }) => {
 };
 
 export default ReminderModal;
+
