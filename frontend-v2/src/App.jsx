@@ -348,13 +348,13 @@ function App() {
 
   return (
     <div className="dashboard-container">
-      <header>
-        <div>
+      <header className="app-header">
+        <div className="app-header-title">
           <h1><Wallet size={32} color="var(--primary)" /> Mis Finanzas</h1>
           <div className="subtitle">Estado Financiero en Tiempo Real</div>
         </div>
         
-        <div style={{ display: 'flex', gap: '1rem', alignItems: 'center' }}>
+        <div className="app-header-actions">
           <button 
             className="ai-magic-btn"
             onClick={() => setIsAiModalOpen(true)}
@@ -453,7 +453,7 @@ function App() {
             </button>
           )}
 
-          <div className="tabs" style={{ display: 'flex', gap: '0.25rem', background: 'rgba(30, 41, 59, 0.6)', padding: '0.25rem', borderRadius: '0.75rem', border: '1px solid var(--border-color)' }}>
+          <div className="tabs tabs-mobile-wrapper" style={{ display: 'flex', gap: '0.25rem', background: 'rgba(30, 41, 59, 0.6)', padding: '0.25rem', borderRadius: '0.75rem', border: '1px solid var(--border-color)' }}>
             <button 
               style={{ background: currentTab === 'dashboard' ? 'var(--primary)' : 'transparent', color: currentTab === 'dashboard' ? '#fff' : 'var(--text-muted)', border: 'none', padding: '0.5rem 1rem', borderRadius: '0.5rem', cursor: 'pointer', fontWeight: 600, transition: 'all 0.2s' }}
               onClick={() => setCurrentTab('dashboard')}
@@ -471,7 +471,7 @@ function App() {
             </button>
           </div>
 
-          <div style={{
+          <div className="date-navigator" style={{
             display: 'flex',
             alignItems: 'center',
             gap: '0.4rem',
