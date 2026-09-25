@@ -10,7 +10,7 @@ import AiModal from './components/modals/AiModal';
 import ReminderModal from './components/modals/ReminderModal';
 import ScanResumenModal from './components/modals/ScanResumenModal';
 import ConfigModal from './components/modals/ConfigModal';
-import AuthLockScreen, { getIsAuthenticated, logoutUser, hasConfiguredPin } from './components/AuthLockScreen';
+import AuthLockScreen, { getIsAuthenticated, logoutUser } from './components/AuthLockScreen';
 
 import { API_BASE } from './config';
 
@@ -427,7 +427,7 @@ function App() {
             <Settings size={18} color="#94a3b8" />
           </button>
 
-          {hasConfiguredPin() && (
+          {getIsAuthenticated() && (
             <button
               className="icon-btn"
               onClick={() => {

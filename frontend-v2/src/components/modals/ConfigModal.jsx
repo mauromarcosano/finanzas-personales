@@ -15,7 +15,7 @@ import {
   ShieldCheck,
   KeyRound
 } from 'lucide-react';
-import { hasConfiguredPin, clearMasterPin, setMasterPin } from '../AuthLockScreen';
+import { STORAGE_TOKEN_KEY } from '../../apiInterceptor';
 
 export default function ConfigModal({ isOpen, onClose, categorias, setCategorias }) {
   if (!isOpen) return null;
@@ -27,10 +27,25 @@ export default function ConfigModal({ isOpen, onClose, categorias, setCategorias
   const [searchTerm, setSearchTerm] = useState('');
 
   // Estado de Seguridad / PIN
-  const [pinActive, setPinActive] = useState(() => hasConfiguredPin());
+  const [pinActive, setPinActive] = useState(false);
   const [showPinChange, setShowPinChange] = useState(false);
   const [newPinVal, setNewPinVal] = useState('');
   const [pinMsg, setPinMsg] = useState('');
+
+  // Cargar estado de PIN del backend al abrir modal
+  useEffect(() => {
+    if (!isOpen) return;
+    const fetchPinStatus = async () => {
+      try {
+        const res = await fetch(`${API_BASE}/api/auth/status`);
+        const data = await res.json();
+        setPinActive(data.isSetup);
+      } catch (err) {
+        console.error('Error fetching pin status', err);
+      }
+    };
+    fetchPinStatus();
+  }, [isOpen]);
 
   // Edición de Categoría
   const [isEditingCat, setIsEditingCat] = useState(false);
@@ -624,12 +639,19 @@ export default function ConfigModal({ isOpen, onClose, categorias, setCategorias
                 </button>
                 <button
                   type="button"
-                  onClick={() => {
-                    clearMasterPin();
-                    setPinActive(false);
-                    setShowPinChange(false);
-                    setPinMsg('PIN eliminado.');
-                    setTimeout(() => setPinMsg(''), 2000);
+                  onClick={async () => {
+                    try {
+                      const res = await fetch(`${API_BASE}/api/auth/remove`, { method: 'POST' });
+                      if (res.ok) {
+                        setPinActive(false);
+                        setShowPinChange(false);
+                        setPinMsg('PIN eliminado.');
+                        localStorage.removeItem(STORAGE_TOKEN_KEY);
+                        setTimeout(() => setPinMsg(''), 2000);
+                      }
+                    } catch (e) {
+                      alert('Error eliminando PIN');
+                    }
                   }}
                   style={{
                     background: 'rgba(239, 68, 68, 0.15)',
@@ -695,14 +717,28 @@ export default function ConfigModal({ isOpen, onClose, categorias, setCategorias
             />
             <button
               type="button"
-              onClick={() => {
+              onClick={async () => {
                 if (newPinVal.trim().length >= 4) {
-                  setMasterPin(newPinVal.trim());
-                  setPinActive(true);
-                  setShowPinChange(false);
-                  setNewPinVal('');
-                  setPinMsg('¡PIN guardado correctamente!');
-                  setTimeout(() => setPinMsg(''), 2000);
+                  try {
+                    const res = await fetch(`${API_BASE}/api/auth/setup`, {
+                      method: 'POST',
+                      headers: { 'Content-Type': 'application/json' },
+                      body: JSON.stringify({ pin: newPinVal.trim() })
+                    });
+                    const data = await res.json();
+                    if (res.ok) {
+                      localStorage.setItem(STORAGE_TOKEN_KEY, data.token);
+                      setPinActive(true);
+                      setShowPinChange(false);
+                      setNewPinVal('');
+                      setPinMsg('¡PIN guardado correctamente!');
+                      setTimeout(() => setPinMsg(''), 2000);
+                    } else {
+                      alert(data.error || 'Error al guardar el PIN');
+                    }
+                  } catch (e) {
+                    alert('Error de red');
+                  }
                 } else {
                   alert('El PIN debe tener al menos 4 caracteres.');
                 }

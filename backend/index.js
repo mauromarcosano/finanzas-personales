@@ -113,6 +113,14 @@ const initDB = async () => {
       );
     `);
 
+    await pool.query(`
+      CREATE TABLE IF NOT EXISTS auth_config (
+        id INT PRIMARY KEY DEFAULT 1,
+        pin_hash TEXT
+      );
+    `);
+
+
     await pool.query('CREATE TABLE IF NOT EXISTS categorias_config (id INT PRIMARY KEY DEFAULT 1, config JSONB NOT NULL);');
     const defaultCats = [
       { id: 'Supermercado_y_Alimentacion', label: 'Supermercado y Alimentación', subcategorias: [ { id: 'Compra_Fuerte_Mes', label: 'Compra Fuerte Mes' }, { id: 'Carniceria_Verduleria', label: 'Carnicería/Verdulería' }, { id: 'Panaderia', label: 'Panadería' } ] },
@@ -164,11 +172,36 @@ const suscripcionesRouter = require('./routes/suscripciones');
 const aiRouter = require('./routes/ai');
 const categoriasRouter = require('./routes/categorias');
 const { router: recordatorioRouter, setSendTestNotification, setTriggerReminder } = require('./routes/recordatorio');
+const { router: authRouter, JWT_SECRET } = require('./routes/auth');
+const jwt = require('jsonwebtoken');
 
 app.get('/', (req, res) => {
   res.json({ status: 'ok', message: 'API Finanzas Personales activa 🚀' });
 });
 
+// Middleware de autenticación global para /api/*
+app.use('/api', (req, res, next) => {
+  // Excluir rutas públicas: auth y webhook
+  if (req.path.startsWith('/auth') || req.path === '/telegram-webhook') {
+    return next();
+  }
+
+  const authHeader = req.headers.authorization;
+  if (!authHeader || !authHeader.startsWith('Bearer ')) {
+    return res.status(401).json({ error: 'Acceso no autorizado. Token faltante.' });
+  }
+
+  const token = authHeader.split(' ')[1];
+  try {
+    const decoded = jwt.verify(token, JWT_SECRET);
+    req.user = decoded;
+    next();
+  } catch (err) {
+    return res.status(401).json({ error: 'Token inválido o expirado.' });
+  }
+});
+
+app.use('/api/auth', authRouter);
 app.use('/api/gastos', gastosRouter);
 app.use('/api/cuotas', cuotasRouter);
 app.use('/api/tarjeta_config', tarjetaConfigRouter);
