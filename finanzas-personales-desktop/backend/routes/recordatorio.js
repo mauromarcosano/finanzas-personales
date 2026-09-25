@@ -68,7 +68,7 @@ const triggerHandler = async (req, res) => {
     if (!triggerReminderFn) {
       return res.status(500).json({ error: 'Servicio de recordatorios no inicializado' });
     }
-    const forced = req.query.force === 'true' || req.body.force === true;
+    const forced = (req.query && req.query.force === 'true') || (req.body && req.body.force === true);
     const result = await triggerReminderFn(forced);
     res.json({ success: true, ...result });
   } catch (error) {
