@@ -10,8 +10,12 @@ import {
   FolderTree, 
   Lightbulb, 
   CheckCircle2,
-  Tag
+  Tag,
+  Lock,
+  ShieldCheck,
+  KeyRound
 } from 'lucide-react';
+import { hasConfiguredPin, clearMasterPin, setMasterPin } from '../AuthLockScreen';
 
 export default function ConfigModal({ isOpen, onClose, categorias, setCategorias }) {
   if (!isOpen) return null;
@@ -21,6 +25,12 @@ export default function ConfigModal({ isOpen, onClose, categorias, setCategorias
   const [saving, setSaving] = useState(false);
   const [saveSuccess, setSaveSuccess] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
+
+  // Estado de Seguridad / PIN
+  const [pinActive, setPinActive] = useState(() => hasConfiguredPin());
+  const [showPinChange, setShowPinChange] = useState(false);
+  const [newPinVal, setNewPinVal] = useState('');
+  const [pinMsg, setPinMsg] = useState('');
 
   // Edición de Categoría
   const [isEditingCat, setIsEditingCat] = useState(false);
@@ -570,6 +580,154 @@ export default function ConfigModal({ isOpen, onClose, categorias, setCategorias
             )}
           </div>
         </div>
+
+        {/* Sección de Seguridad / PIN */}
+        <div style={{
+          marginTop: '1.25rem',
+          paddingTop: '1rem',
+          borderTop: '1px solid var(--border-color)',
+          display: 'flex',
+          justify: 'space-between',
+          alignItems: 'center',
+          background: 'rgba(30, 41, 59, 0.4)',
+          padding: '0.85rem 1.25rem',
+          borderRadius: '0.75rem'
+        }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '0.65rem' }}>
+            <Lock size={18} color="#a78bfa" />
+            <div>
+              <div style={{ fontWeight: 600, fontSize: '0.85rem' }}>Seguridad y PIN de Acceso</div>
+              <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>
+                {pinActive ? '🟢 PIN activo (Pantalla protegida)' : '⚪ Sin PIN (Acceso libre)'}
+              </div>
+            </div>
+          </div>
+
+          <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center' }}>
+            {pinActive ? (
+              <>
+                <button
+                  type="button"
+                  onClick={() => setShowPinChange(!showPinChange)}
+                  style={{
+                    background: 'rgba(139, 92, 246, 0.2)',
+                    border: '1px solid rgba(139, 92, 246, 0.4)',
+                    color: '#c084fc',
+                    padding: '0.4rem 0.75rem',
+                    borderRadius: '0.5rem',
+                    fontSize: '0.8rem',
+                    cursor: 'pointer',
+                    fontWeight: 600
+                  }}
+                >
+                  Cambiar PIN
+                </button>
+                <button
+                  type="button"
+                  onClick={() => {
+                    clearMasterPin();
+                    setPinActive(false);
+                    setShowPinChange(false);
+                    setPinMsg('PIN eliminado.');
+                    setTimeout(() => setPinMsg(''), 2000);
+                  }}
+                  style={{
+                    background: 'rgba(239, 68, 68, 0.15)',
+                    border: '1px solid rgba(239, 68, 68, 0.3)',
+                    color: '#ef4444',
+                    padding: '0.4rem 0.75rem',
+                    borderRadius: '0.5rem',
+                    fontSize: '0.8rem',
+                    cursor: 'pointer'
+                  }}
+                >
+                  Eliminar PIN
+                </button>
+              </>
+            ) : (
+              <button
+                type="button"
+                onClick={() => setShowPinChange(true)}
+                style={{
+                  background: 'linear-gradient(135deg, #8b5cf6, #6366f1)',
+                  border: 'none',
+                  color: '#fff',
+                  padding: '0.45rem 0.85rem',
+                  borderRadius: '0.5rem',
+                  fontSize: '0.8rem',
+                  cursor: 'pointer',
+                  fontWeight: 600,
+                  boxShadow: '0 4px 12px rgba(139, 92, 246, 0.3)'
+                }}
+              >
+                🔐 Activar PIN
+              </button>
+            )}
+          </div>
+        </div>
+
+        {showPinChange && (
+          <div style={{
+            marginTop: '0.75rem',
+            padding: '0.85rem 1rem',
+            background: 'rgba(15, 23, 42, 0.8)',
+            borderRadius: '0.75rem',
+            border: '1px solid rgba(139, 92, 246, 0.3)',
+            display: 'flex',
+            gap: '0.5rem',
+            alignItems: 'center'
+          }}>
+            <input
+              type="password"
+              placeholder="Nuevo PIN (min. 4 caracteres)..."
+              value={newPinVal}
+              onChange={e => setNewPinVal(e.target.value)}
+              style={{
+                flex: 1,
+                padding: '0.45rem 0.75rem',
+                borderRadius: '0.5rem',
+                background: 'rgba(30, 41, 59, 0.8)',
+                border: '1px solid var(--border-color)',
+                color: '#fff',
+                fontSize: '0.85rem',
+                outline: 'none'
+              }}
+            />
+            <button
+              type="button"
+              onClick={() => {
+                if (newPinVal.trim().length >= 4) {
+                  setMasterPin(newPinVal.trim());
+                  setPinActive(true);
+                  setShowPinChange(false);
+                  setNewPinVal('');
+                  setPinMsg('¡PIN guardado correctamente!');
+                  setTimeout(() => setPinMsg(''), 2000);
+                } else {
+                  alert('El PIN debe tener al menos 4 caracteres.');
+                }
+              }}
+              style={{
+                background: '#8b5cf6',
+                border: 'none',
+                color: '#fff',
+                padding: '0.45rem 0.85rem',
+                borderRadius: '0.5rem',
+                fontSize: '0.8rem',
+                fontWeight: 600,
+                cursor: 'pointer'
+              }}
+            >
+              Guardar
+            </button>
+          </div>
+        )}
+
+        {pinMsg && (
+          <div style={{ textAlign: 'center', fontSize: '0.8rem', color: '#10b981', marginTop: '0.4rem' }}>
+            {pinMsg}
+          </div>
+        )}
 
       </div>
     </div>

@@ -1,5 +1,5 @@
 import { useState, useEffect, useMemo } from 'react';
-import { Wallet, ChevronLeft, ChevronRight, Sparkles, Bell, Calendar, FileText, Settings } from 'lucide-react';
+import { Wallet, ChevronLeft, ChevronRight, Sparkles, Bell, Calendar, FileText, Settings, Lock } from 'lucide-react';
 import './index.css';
 
 import Dashboard from './components/Dashboard';
@@ -10,12 +10,14 @@ import AiModal from './components/modals/AiModal';
 import ReminderModal from './components/modals/ReminderModal';
 import ScanResumenModal from './components/modals/ScanResumenModal';
 import ConfigModal from './components/modals/ConfigModal';
+import AuthLockScreen, { getIsAuthenticated, logoutUser, hasConfiguredPin } from './components/AuthLockScreen';
 
 import { API_BASE } from './config';
 
 const API_URL = `${API_BASE}/api/gastos`;
 
 function App() {
+  const [isAuthenticated, setIsAuthenticated] = useState(() => getIsAuthenticated());
   const [gastos, setGastos] = useState([]);
   const [editingGasto, setEditingGasto] = useState(null);
   const [isCreating, setIsCreating] = useState(false);
@@ -425,6 +427,31 @@ function App() {
             <Settings size={18} color="#94a3b8" />
           </button>
 
+          {hasConfiguredPin() && (
+            <button
+              className="icon-btn"
+              onClick={() => {
+                logoutUser();
+                setIsAuthenticated(false);
+              }}
+              title="Bloquear pantalla / Cerrar sesión"
+              style={{ 
+                background: 'rgba(239, 68, 68, 0.12)', 
+                border: '1px solid rgba(239, 68, 68, 0.3)', 
+                borderRadius: '0.75rem', 
+                padding: '0.5rem 0.75rem',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                color: '#ef4444',
+                cursor: 'pointer',
+                transition: 'all 0.2s ease'
+              }}
+            >
+              <Lock size={18} color="#ef4444" />
+            </button>
+          )}
+
           <div className="tabs" style={{ display: 'flex', gap: '0.25rem', background: 'rgba(30, 41, 59, 0.6)', padding: '0.25rem', borderRadius: '0.75rem', border: '1px solid var(--border-color)' }}>
             <button 
               style={{ background: currentTab === 'dashboard' ? 'var(--primary)' : 'transparent', color: currentTab === 'dashboard' ? '#fff' : 'var(--text-muted)', border: 'none', padding: '0.5rem 1rem', borderRadius: '0.5rem', cursor: 'pointer', fontWeight: 600, transition: 'all 0.2s' }}
@@ -594,6 +621,10 @@ function App() {
         categorias={categoriasConfig}
         setCategorias={setCategoriasConfig}
       />
+
+      {!isAuthenticated && (
+        <AuthLockScreen onAuthenticated={() => setIsAuthenticated(true)} />
+      )}
     </div>
   );
 }

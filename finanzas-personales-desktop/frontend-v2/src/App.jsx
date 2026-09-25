@@ -1,5 +1,5 @@
 import { useState, useEffect, useMemo } from 'react';
-import { Wallet, ChevronLeft, ChevronRight, Sparkles, Bell, Calendar, FileText, Settings } from 'lucide-react';
+import { Wallet, ChevronLeft, ChevronRight, Sparkles, Bell, Calendar, FileText, Settings, Lock } from 'lucide-react';
 import './index.css';
 
 import Dashboard from './components/Dashboard';
@@ -10,11 +10,14 @@ import AiModal from './components/modals/AiModal';
 import ReminderModal from './components/modals/ReminderModal';
 import ScanResumenModal from './components/modals/ScanResumenModal';
 import ConfigModal from './components/modals/ConfigModal';
-import ErrorBoundary from './components/ErrorBoundary';
+import AuthLockScreen, { getIsAuthenticated, logoutUser, hasConfiguredPin } from './components/AuthLockScreen';
 
-const API_URL = '/api/gastos';
+import { API_BASE } from './config';
+
+const API_URL = `${API_BASE}/api/gastos`;
 
 function App() {
+  const [isAuthenticated, setIsAuthenticated] = useState(() => getIsAuthenticated());
   const [gastos, setGastos] = useState([]);
   const [editingGasto, setEditingGasto] = useState(null);
   const [isCreating, setIsCreating] = useState(false);
@@ -33,10 +36,10 @@ function App() {
 
   const fetchCuotas = async () => {
     try {
-      const res = await fetch('/api/cuotas');
+      const res = await fetch(`${API_BASE}/api/cuotas`);
       if (res.ok) {
         const data = await res.json();
-        setCuotasPendientes(Array.isArray(data) ? data : []);
+        setCuotasPendientes(data);
       }
     } catch (error) {
       console.error('Error fetching cuotas:', error);
@@ -45,10 +48,9 @@ function App() {
 
   const fetchSuscripciones = async () => {
     try {
-      const res = await fetch('/api/suscripciones');
+      const res = await fetch(`${API_BASE}/api/suscripciones`);
       if (res.ok) {
-        const data = await res.json();
-        setSuscripciones(Array.isArray(data) ? data : []);
+        setSuscripciones(await res.json());
       }
     } catch (error) {
       console.error('Error fetching suscripciones:', error);
@@ -62,7 +64,7 @@ function App() {
       const res = await fetch(`${API_URL}?month=${month}&year=${year}`);
       if (res.ok) {
         const data = await res.json();
-        setGastos(Array.isArray(data) ? data : []);
+        setGastos(data);
       }
     } catch (error) {
       console.error('Error fetching gastos:', error);
@@ -71,17 +73,9 @@ function App() {
 
   const fetchCategoriasConfig = async () => {
     try {
-      const res = await fetch('/api/categorias');
+      const res = await fetch(`${API_BASE}/api/categorias`);
       if (res.ok) {
-        let data = await res.json();
-        while (typeof data === 'string') {
-          try {
-            data = JSON.parse(data);
-          } catch (e) {
-            break;
-          }
-        }
-        setCategoriasConfig(Array.isArray(data) ? data : []);
+        setCategoriasConfig(await res.json());
       }
     } catch (error) {
       console.error('Error fetching categorias:', error);
@@ -312,7 +306,7 @@ function App() {
 
   const liquidarCuota = async (id) => {
     try {
-      const res = await fetch(`/api/cuotas/${id}/pagar`, { method: 'POST' });
+      const res = await fetch(`${API_BASE}/api/cuotas/${id}/pagar`, { method: 'POST' });
       if (res.ok) {
         fetchCuotas();
       } else {
@@ -352,259 +346,286 @@ function App() {
   }, [displayGastos, categoryFilter, subCategoryFilter, paymentMethodFilter]);
 
   return (
-    <ErrorBoundary>
-      <div className="dashboard-container">
-        <header>
-          <div>
-            <h1><Wallet size={32} color="var(--primary)" /> Mis Finanzas</h1>
-            <div className="subtitle">Estado Financiero en Tiempo Real</div>
-          </div>
-          
-          <div style={{ display: 'flex', gap: '1rem', alignItems: 'center' }}>
-            <button 
-              className="ai-magic-btn"
-              onClick={() => setIsAiModalOpen(true)}
-              title="Pedir una opinión inteligente a la IA sobre tus gastos"
-            >
-              <Sparkles size={16} className="sparkle-icon" />
-              <span>Análisis IA</span>
-            </button>
+    <div className="dashboard-container">
+      <header>
+        <div>
+          <h1><Wallet size={32} color="var(--primary)" /> Mis Finanzas</h1>
+          <div className="subtitle">Estado Financiero en Tiempo Real</div>
+        </div>
+        
+        <div style={{ display: 'flex', gap: '1rem', alignItems: 'center' }}>
+          <button 
+            className="ai-magic-btn"
+            onClick={() => setIsAiModalOpen(true)}
+            title="Pedir una opinión inteligente a la IA sobre tus gastos"
+          >
+            <Sparkles size={16} className="sparkle-icon" />
+            <span>Análisis IA</span>
+          </button>
 
-            <button 
-              className="icon-btn"
-              onClick={() => setIsScanModalOpen(true)}
-              title="Escanear resumen de tarjeta o factura en PDF/Imagen con IA"
-              style={{ 
-                background: 'linear-gradient(135deg, rgba(16, 185, 129, 0.2), rgba(13, 148, 136, 0.2))', 
-                border: '1px solid rgba(16, 185, 129, 0.4)', 
-                borderRadius: '0.75rem', 
-                padding: '0.5rem 0.85rem',
-                display: 'flex',
-                alignItems: 'center',
-                gap: '0.45rem',
-                color: '#34d399',
-                fontSize: '0.85rem',
-                fontWeight: 600,
-                cursor: 'pointer',
-                boxShadow: '0 4px 12px rgba(16, 185, 129, 0.15)',
-                transition: 'all 0.2s ease'
-              }}
-            >
-              <FileText size={16} color="#34d399" />
-              <span>Escanear Resumen</span>
-            </button>
+          <button 
+            className="icon-btn"
+            onClick={() => setIsScanModalOpen(true)}
+            title="Escanear resumen de tarjeta o factura en PDF/Imagen con IA"
+            style={{ 
+              background: 'linear-gradient(135deg, rgba(16, 185, 129, 0.2), rgba(13, 148, 136, 0.2))', 
+              border: '1px solid rgba(16, 185, 129, 0.4)', 
+              borderRadius: '0.75rem', 
+              padding: '0.5rem 0.85rem',
+              display: 'flex',
+              alignItems: 'center',
+              gap: '0.45rem',
+              color: '#34d399',
+              fontSize: '0.85rem',
+              fontWeight: 600,
+              cursor: 'pointer',
+              boxShadow: '0 4px 12px rgba(16, 185, 129, 0.15)',
+              transition: 'all 0.2s ease'
+            }}
+          >
+            <FileText size={16} color="#34d399" />
+            <span>Escanear Resumen</span>
+          </button>
 
-            <button
-              className="icon-btn"
-              onClick={() => setIsReminderModalOpen(true)}
-              title="Configurar recordatorio diario de gastos por Telegram"
-              style={{ 
-                background: 'rgba(30, 41, 59, 0.6)', 
-                border: '1px solid var(--border-color)', 
-                borderRadius: '0.75rem', 
-                padding: '0.5rem 0.75rem',
-                display: 'flex',
-                alignItems: 'center',
-                gap: '0.4rem',
-                color: 'var(--text-main)',
-                fontSize: '0.85rem',
-                fontWeight: 600
-              }}
-            >
-              <Bell size={16} color="#8b5cf6" />
-              <span>Recordatorio</span>
-            </button>
-
-            <button
-              className="icon-btn"
-              onClick={() => setIsConfigModalOpen(true)}
-              title="Configurar Categorías"
-              style={{ 
-                background: 'rgba(30, 41, 59, 0.6)', 
-                border: '1px solid var(--border-color)', 
-                borderRadius: '0.75rem', 
-                padding: '0.5rem 0.75rem',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                color: 'var(--text-main)',
-                cursor: 'pointer'
-              }}
-            >
-              <Settings size={18} color="#94a3b8" />
-            </button>
-
-            <div className="tabs" style={{ display: 'flex', gap: '0.25rem', background: 'rgba(30, 41, 59, 0.6)', padding: '0.25rem', borderRadius: '0.75rem', border: '1px solid var(--border-color)' }}>
-              <button 
-                style={{ background: currentTab === 'dashboard' ? 'var(--primary)' : 'transparent', color: currentTab === 'dashboard' ? '#fff' : 'var(--text-muted)', border: 'none', padding: '0.5rem 1rem', borderRadius: '0.5rem', cursor: 'pointer', fontWeight: 600, transition: 'all 0.2s' }}
-                onClick={() => setCurrentTab('dashboard')}
-              >
-                Dashboard
-              </button>
-              <button 
-                style={{ background: currentTab === 'tarjetas' ? 'var(--primary)' : 'transparent', color: currentTab === 'tarjetas' ? '#fff' : 'var(--text-muted)', border: 'none', padding: '0.5rem 1rem', borderRadius: '0.5rem', cursor: 'pointer', fontWeight: 600, transition: 'all 0.2s' }}
-                onClick={() => {
-                  setCurrentTab('tarjetas');
-                  fetchCuotas();
-                }}
-              >
-                Tarjetas
-              </button>
-            </div>
-
-            <div style={{
+          <button
+            className="icon-btn"
+            onClick={() => setIsReminderModalOpen(true)}
+            title="Configurar recordatorio diario de gastos por Telegram"
+            style={{ 
+              background: 'rgba(30, 41, 59, 0.6)', 
+              border: '1px solid var(--border-color)', 
+              borderRadius: '0.75rem', 
+              padding: '0.5rem 0.75rem',
               display: 'flex',
               alignItems: 'center',
               gap: '0.4rem',
-              background: 'rgba(30, 41, 59, 0.7)',
-              border: '1px solid var(--border-color)',
-              borderRadius: '0.85rem',
-              padding: '0.35rem 0.6rem',
-              boxShadow: '0 4px 12px rgba(0, 0, 0, 0.15)',
-              backdropFilter: 'blur(10px)'
-            }}>
-              <button 
-                className="icon-btn" 
-                onClick={prevMonth}
-                title="Mes anterior"
-                style={{
-                  background: 'rgba(255, 255, 255, 0.05)',
-                  border: '1px solid rgba(255, 255, 255, 0.1)',
-                  borderRadius: '0.5rem',
-                  padding: '0.3rem',
-                  color: 'var(--text-main)',
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  cursor: 'pointer'
-                }}
-              >
-                <ChevronLeft size={18} />
-              </button>
+              color: 'var(--text-main)',
+              fontSize: '0.85rem',
+              fontWeight: 600
+            }}
+          >
+            <Bell size={16} color="#8b5cf6" />
+            <span>Recordatorio</span>
+          </button>
 
-              <div style={{ 
-                fontWeight: 700, 
-                fontSize: '0.95rem', 
-                minWidth: '135px', 
-                textAlign: 'center',
-                color: '#fff',
+          <button
+            className="icon-btn"
+            onClick={() => setIsConfigModalOpen(true)}
+            title="Configurar Categorías"
+            style={{ 
+              background: 'rgba(30, 41, 59, 0.6)', 
+              border: '1px solid var(--border-color)', 
+              borderRadius: '0.75rem', 
+              padding: '0.5rem 0.75rem',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              color: 'var(--text-main)',
+              cursor: 'pointer'
+            }}
+          >
+            <Settings size={18} color="#94a3b8" />
+          </button>
+
+          {hasConfiguredPin() && (
+            <button
+              className="icon-btn"
+              onClick={() => {
+                logoutUser();
+                setIsAuthenticated(false);
+              }}
+              title="Bloquear pantalla / Cerrar sesión"
+              style={{ 
+                background: 'rgba(239, 68, 68, 0.12)', 
+                border: '1px solid rgba(239, 68, 68, 0.3)', 
+                borderRadius: '0.75rem', 
+                padding: '0.5rem 0.75rem',
                 display: 'flex',
                 alignItems: 'center',
                 justifyContent: 'center',
-                gap: '0.35rem'
-              }}>
-                <Calendar size={15} color="#8b5cf6" />
-                <span>{capitalizedMonth}</span>
-                <span style={{ color: 'var(--text-muted)', fontWeight: 500 }}>{currentDate.getFullYear()}</span>
-              </div>
+                color: '#ef4444',
+                cursor: 'pointer',
+                transition: 'all 0.2s ease'
+              }}
+            >
+              <Lock size={18} color="#ef4444" />
+            </button>
+          )}
 
-              <button 
-                className="icon-btn" 
-                onClick={nextMonth}
-                title="Mes siguiente"
-                style={{
-                  background: 'rgba(255, 255, 255, 0.05)',
-                  border: '1px solid rgba(255, 255, 255, 0.1)',
-                  borderRadius: '0.5rem',
-                  padding: '0.3rem',
-                  color: 'var(--text-main)',
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  cursor: 'pointer'
-                }}
-              >
-                <ChevronRight size={18} />
-              </button>
-            </div>
+          <div className="tabs" style={{ display: 'flex', gap: '0.25rem', background: 'rgba(30, 41, 59, 0.6)', padding: '0.25rem', borderRadius: '0.75rem', border: '1px solid var(--border-color)' }}>
+            <button 
+              style={{ background: currentTab === 'dashboard' ? 'var(--primary)' : 'transparent', color: currentTab === 'dashboard' ? '#fff' : 'var(--text-muted)', border: 'none', padding: '0.5rem 1rem', borderRadius: '0.5rem', cursor: 'pointer', fontWeight: 600, transition: 'all 0.2s' }}
+              onClick={() => setCurrentTab('dashboard')}
+            >
+              Dashboard
+            </button>
+            <button 
+              style={{ background: currentTab === 'tarjetas' ? 'var(--primary)' : 'transparent', color: currentTab === 'tarjetas' ? '#fff' : 'var(--text-muted)', border: 'none', padding: '0.5rem 1rem', borderRadius: '0.5rem', cursor: 'pointer', fontWeight: 600, transition: 'all 0.2s' }}
+              onClick={() => {
+                setCurrentTab('tarjetas');
+                fetchCuotas();
+              }}
+            >
+              Tarjetas
+            </button>
           </div>
-        </header>
 
-        {currentTab === 'tarjetas' && (
-          <TarjetasBandeja 
-            cuotasPendientes={cuotasPendientes}
-            fetchCuotas={fetchCuotas}
-            liquidarCuota={liquidarCuota}
-            setIsCreating={setIsCreating}
-            currentDate={currentDate}
-            suscripciones={suscripciones}
-            fetchSuscripciones={fetchSuscripciones}
-          />
-        )}
+          <div style={{
+            display: 'flex',
+            alignItems: 'center',
+            gap: '0.4rem',
+            background: 'rgba(30, 41, 59, 0.7)',
+            border: '1px solid var(--border-color)',
+            borderRadius: '0.85rem',
+            padding: '0.35rem 0.6rem',
+            boxShadow: '0 4px 12px rgba(0, 0, 0, 0.15)',
+            backdropFilter: 'blur(10px)'
+          }}>
+            <button 
+              className="icon-btn" 
+              onClick={prevMonth}
+              title="Mes anterior"
+              style={{
+                background: 'rgba(255, 255, 255, 0.05)',
+                border: '1px solid rgba(255, 255, 255, 0.1)',
+                borderRadius: '0.5rem',
+                padding: '0.3rem',
+                color: 'var(--text-main)',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                cursor: 'pointer'
+              }}
+            >
+              <ChevronLeft size={18} />
+            </button>
 
-        {currentTab === 'dashboard' && (
-          <Dashboard 
-            totalMes={totalMes}
-            totalTarjeta={totalTarjeta}
-            mayorGasto={mayorGasto}
-            chartData={chartData}
-            uniqueCategories={uniqueCategories}
-            uniqueSubCategories={uniqueSubCategories}
-            categoryFilter={categoryFilter}
-            setCategoryFilter={setCategoryFilter}
-            subCategoryFilter={subCategoryFilter}
-            setSubCategoryFilter={setSubCategoryFilter}
-            paymentMethodFilter={paymentMethodFilter}
-            setPaymentMethodFilter={setPaymentMethodFilter}
-            filteredGastos={filteredGastos}
-            setIsCreating={setIsCreating}
-            setEditingGasto={setEditingGasto}
-            handleDelete={handleDelete}
-          />
-        )}
+            <div style={{ 
+              fontWeight: 700, 
+              fontSize: '0.95rem', 
+              minWidth: '135px', 
+              textAlign: 'center',
+              color: '#fff',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              gap: '0.35rem'
+            }}>
+              <Calendar size={15} color="#8b5cf6" />
+              <span>{capitalizedMonth}</span>
+              <span style={{ color: 'var(--text-muted)', fontWeight: 500 }}>{currentDate.getFullYear()}</span>
+            </div>
 
-        {isCreating && (
-          <CreateModal 
-            currentTab={currentTab} 
-            setIsCreating={setIsCreating} 
-            handleSaveCreate={handleSaveCreate} 
-            categoriasConfig={categoriasConfig}
-          />
-        )}
+            <button 
+              className="icon-btn" 
+              onClick={nextMonth}
+              title="Mes siguiente"
+              style={{
+                background: 'rgba(255, 255, 255, 0.05)',
+                border: '1px solid rgba(255, 255, 255, 0.1)',
+                borderRadius: '0.5rem',
+                padding: '0.3rem',
+                color: 'var(--text-main)',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                cursor: 'pointer'
+              }}
+            >
+              <ChevronRight size={18} />
+            </button>
+          </div>
+        </div>
+      </header>
 
-        {editingGasto && (
-          <EditModal 
-            editingGasto={editingGasto} 
-            setEditingGasto={setEditingGasto} 
-            handleSaveEdit={handleSaveEdit}
-            handleDelete={handleDelete}
-            categoriasConfig={categoriasConfig}
-          />
-        )}
+      {currentTab === 'tarjetas' && (
+        <TarjetasBandeja 
+          cuotasPendientes={cuotasPendientes}
+          fetchCuotas={fetchCuotas}
+          liquidarCuota={liquidarCuota}
+          setIsCreating={setIsCreating}
+          currentDate={currentDate}
+          suscripciones={suscripciones}
+          fetchSuscripciones={fetchSuscripciones}
+        />
+      )}
 
-        <AiModal 
-          isOpen={isAiModalOpen}
-          onClose={() => setIsAiModalOpen(false)}
-          monthName={`${capitalizedMonth} ${currentDate.getFullYear()}`}
+      {currentTab === 'dashboard' && (
+        <Dashboard 
           totalMes={totalMes}
           totalTarjeta={totalTarjeta}
           mayorGasto={mayorGasto}
           chartData={chartData}
-          gastos={gastos}
+          uniqueCategories={uniqueCategories}
+          uniqueSubCategories={uniqueSubCategories}
+          categoryFilter={categoryFilter}
+          setCategoryFilter={setCategoryFilter}
+          subCategoryFilter={subCategoryFilter}
+          setSubCategoryFilter={setSubCategoryFilter}
+          paymentMethodFilter={paymentMethodFilter}
+          setPaymentMethodFilter={setPaymentMethodFilter}
+          filteredGastos={filteredGastos}
+          setIsCreating={setIsCreating}
+          setEditingGasto={setEditingGasto}
+          handleDelete={handleDelete}
         />
+      )}
 
-        <ReminderModal 
-          isOpen={isReminderModalOpen}
-          onClose={() => setIsReminderModalOpen(false)}
+      {isCreating && (
+        <CreateModal 
+          currentTab={currentTab} 
+          setIsCreating={setIsCreating} 
+          handleSaveCreate={handleSaveCreate} 
+          categoriasConfig={categoriasConfig}
         />
+      )}
 
-        <ScanResumenModal 
-          isOpen={isScanModalOpen}
-          onClose={() => setIsScanModalOpen(false)}
-          onImportSuccess={() => {
-            fetchGastos();
-            fetchCuotas();
-          }}
+      {editingGasto && (
+        <EditModal 
+          editingGasto={editingGasto} 
+          setEditingGasto={setEditingGasto} 
+          handleSaveEdit={handleSaveEdit}
+          handleDelete={handleDelete}
+          categoriasConfig={categoriasConfig}
         />
+      )}
 
-        <ConfigModal
-          isOpen={isConfigModalOpen}
-          onClose={() => setIsConfigModalOpen(false)}
-          categorias={categoriasConfig}
-          setCategorias={setCategoriasConfig}
-        />
-      </div>
-    </ErrorBoundary>
+      <AiModal 
+        isOpen={isAiModalOpen}
+        onClose={() => setIsAiModalOpen(false)}
+        monthName={`${capitalizedMonth} ${currentDate.getFullYear()}`}
+        totalMes={totalMes}
+        totalTarjeta={totalTarjeta}
+        mayorGasto={mayorGasto}
+        chartData={chartData}
+        gastos={gastos}
+      />
+
+      <ReminderModal 
+        isOpen={isReminderModalOpen}
+        onClose={() => setIsReminderModalOpen(false)}
+      />
+
+      <ScanResumenModal 
+        isOpen={isScanModalOpen}
+        onClose={() => setIsScanModalOpen(false)}
+        onImportSuccess={() => {
+          fetchGastos();
+          fetchCuotas();
+        }}
+      />
+
+      <ConfigModal
+        isOpen={isConfigModalOpen}
+        onClose={() => setIsConfigModalOpen(false)}
+        categorias={categoriasConfig}
+        setCategorias={setCategoriasConfig}
+      />
+
+      {!isAuthenticated && (
+        <AuthLockScreen onAuthenticated={() => setIsAuthenticated(true)} />
+      )}
+    </div>
   );
 }
 
