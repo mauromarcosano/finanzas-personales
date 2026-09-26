@@ -1,6 +1,7 @@
 import React from 'react';
 import { Wallet, CreditCard, TrendingUp, PieChart, Filter, AlertCircle, Plus, Pencil, Trash2 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
+import CountUp from 'react-countup';
 
 const Dashboard = ({
   totalMes,
@@ -26,7 +27,7 @@ const Dashboard = ({
     <main className="bento-grid">
       {/* Metric Cards */}
       <motion.div 
-        initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.3 }}
+        initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ type: 'spring', stiffness: 300, damping: 24 }}
         className="glass-card card-total"
       >
         <div className="card-title">
@@ -35,12 +36,12 @@ const Dashboard = ({
         </div>
         <div className="card-value">
           <span className="currency">$</span>
-          {totalMes.toLocaleString('es-AR', { maximumFractionDigits: 0 })}
+          <CountUp end={totalMes} duration={1.5} separator="." />
         </div>
       </motion.div>
 
       <motion.div 
-        initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.3, delay: 0.1 }}
+        initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ type: 'spring', stiffness: 300, damping: 24, delay: 0.05 }}
         className="glass-card card-tarjeta"
       >
         <div className="card-title" style={{color: '#f97316'}}>
@@ -49,12 +50,12 @@ const Dashboard = ({
         </div>
         <div className="card-value">
           <span className="currency" style={{color: '#f97316'}}>$</span>
-          {totalTarjeta.toLocaleString('es-AR', { maximumFractionDigits: 0 })}
+          <CountUp end={totalTarjeta} duration={1.5} separator="." />
         </div>
       </motion.div>
 
       <motion.div 
-        initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.3, delay: 0.2 }}
+        initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ type: 'spring', stiffness: 300, damping: 24, delay: 0.1 }}
         className="glass-card card-mayor" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}
       >
         <div style={{ flex: 1, minWidth: 0, paddingRight: '1rem' }}>
@@ -66,7 +67,7 @@ const Dashboard = ({
             {mayorGasto ? (
                <>
                  <span className="currency" style={{color: '#ef4444'}}>$</span>
-                 {parseFloat(mayorGasto.monto).toLocaleString('es-AR', { maximumFractionDigits: 0 })}
+                 <CountUp end={parseFloat(mayorGasto.monto)} duration={1.5} separator="." />
                </>
             ) : '-'}
           </div>
@@ -106,7 +107,7 @@ const Dashboard = ({
 
       {/* Chart Section */}
       <motion.div 
-        initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.3, delay: 0.3 }}
+        initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ type: 'spring', stiffness: 300, damping: 24, delay: 0.15 }}
         className="glass-card chart-section"
       >
         <div className="card-title mb-4">
@@ -163,7 +164,7 @@ const Dashboard = ({
                   {hoveredSlice.name}
                 </div>
                 <div className="center-amount">
-                  ${hoveredSlice.value.toLocaleString('es-AR', { maximumFractionDigits: 0 })}
+                  $<CountUp end={hoveredSlice.value} duration={0.5} separator="." />
                 </div>
                 <div 
                   className="center-badge" 
@@ -180,7 +181,7 @@ const Dashboard = ({
               <>
                 <div className="center-cat-name">Gastos Totales</div>
                 <div className="center-amount">
-                  ${totalMes.toLocaleString('es-AR', { maximumFractionDigits: 0 })}
+                  $<CountUp end={totalMes} duration={1.5} separator="." />
                 </div>
                 <div className="center-badge">
                   {chartData.length} {chartData.length === 1 ? 'categoría' : 'categorías'}
@@ -240,7 +241,7 @@ const Dashboard = ({
 
       {/* List Section */}
       <motion.div 
-        initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.3, delay: 0.4 }}
+        initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ type: 'spring', stiffness: 300, damping: 24, delay: 0.2 }}
         className="glass-card list-section"
       >
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem', flexWrap: 'wrap', gap: '1rem' }}>
@@ -307,11 +308,11 @@ const Dashboard = ({
             <AnimatePresence>
             {filteredGastos.map(g => (
               <motion.div 
-                layout
+                layout="position"
                 initial={{ opacity: 0, y: 20, scale: 0.95 }}
                 animate={{ opacity: 1, y: 0, scale: 1 }}
                 exit={{ opacity: 0, scale: 0.95, y: -20 }}
-                transition={{ duration: 0.2 }}
+                transition={{ type: 'spring', stiffness: 400, damping: 30 }}
                 className="expense-item" 
                 key={g.id}
               >

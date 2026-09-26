@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { CreditCard, Plus, Calendar, Clock, CheckCircle2, Trash2, Zap, Pencil } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
+import CountUp from 'react-countup';
 import confetti from 'canvas-confetti';
 import { toast } from 'sonner';
 import { API_BASE } from '../config';
@@ -251,7 +252,7 @@ const TarjetasBandeja = ({ cuotasPendientes, fetchCuotas, setIsCreating, current
           <div style={{ textAlign: 'right' }}>
             <div style={{ color: 'var(--text-muted)', fontSize: '0.9rem', marginBottom: '0.25rem' }}>Total Proyectado Resumen</div>
             <div style={{ fontSize: '2rem', fontWeight: 700, color: '#8b5cf6' }}>
-              ${totalResumen.toLocaleString('es-AR', { maximumFractionDigits: 0 })}
+              $<CountUp end={totalResumen} duration={1.5} separator="." />
             </div>
           </div>
 
@@ -284,11 +285,11 @@ const TarjetasBandeja = ({ cuotasPendientes, fetchCuotas, setIsCreating, current
               <AnimatePresence>
               {cuotasActivas.map(c => (
                 <motion.div 
-                  layout
+                  layout="position"
                   initial={{ opacity: 0, y: 20, scale: 0.95 }}
                   animate={{ opacity: 1, y: 0, scale: 1 }}
                   exit={{ opacity: 0, scale: 0.95, y: -20 }}
-                  transition={{ duration: 0.2 }}
+                  transition={{ type: 'spring', stiffness: 400, damping: 30 }}
                   className="expense-item" 
                   key={c.cuota_id}
                 >
