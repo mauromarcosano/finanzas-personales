@@ -1,5 +1,6 @@
 import { useState, useEffect, useMemo } from 'react';
 import { Wallet, ChevronLeft, ChevronRight, Sparkles, Bell, Calendar, FileText, Settings, Lock } from 'lucide-react';
+import { toast } from 'sonner';
 import './index.css';
 
 import Dashboard from './components/Dashboard';

@@ -1,5 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { CreditCard, Plus, Calendar, Clock, CheckCircle2, Trash2, Zap, Pencil } from 'lucide-react';
+import { motion, AnimatePresence } from 'framer-motion';
+import confetti from 'canvas-confetti';
+import { toast } from 'sonner';
 import { API_BASE } from '../config';
 
 const API_URL = `${API_BASE}/api`;
@@ -101,15 +104,21 @@ const TarjetasBandeja = ({ cuotasPendientes, fetchCuotas, setIsCreating, current
         body: JSON.stringify({ cuotasIds })
       });
       if (res.ok) {
-        alert('¡Resumen liquidado con éxito! Las fechas de cierre se adelantaron al mes que viene.');
+        confetti({
+          particleCount: 100,
+          spread: 70,
+          origin: { y: 0.6 },
+          colors: ['#22c55e', '#8b5cf6', '#3b82f6']
+        });
+        toast.success('¡Resumen liquidado con éxito! Las fechas de cierre se adelantaron al mes que viene.');
         fetchCuotas(); 
         fetchConfig();
       } else {
-        alert('Error liquidando resumen');
+        toast.error('Error liquidando resumen');
       }
     } catch (e) {
       console.error(e);
-      alert('Error de conexión');
+      toast.error('Error de conexión');
     } finally {
       setIsLiquidating(false);
     }
@@ -272,8 +281,17 @@ const TarjetasBandeja = ({ cuotasPendientes, fetchCuotas, setIsCreating, current
             <div style={{ textAlign: 'center', padding: '2rem', color: 'var(--text-muted)' }}>No tenés consumos en cuotas para este mes.</div>
           ) : (
             <div className="expense-list">
+              <AnimatePresence>
               {cuotasActivas.map(c => (
-                <div className="expense-item" key={c.cuota_id}>
+                <motion.div 
+                  layout
+                  initial={{ opacity: 0, y: 20, scale: 0.95 }}
+                  animate={{ opacity: 1, y: 0, scale: 1 }}
+                  exit={{ opacity: 0, scale: 0.95, y: -20 }}
+                  transition={{ duration: 0.2 }}
+                  className="expense-item" 
+                  key={c.cuota_id}
+                >
                   <div className="expense-info">
                     <div className="expense-desc" style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
                       <span>{c.descripcion}</span>
@@ -303,8 +321,10 @@ const TarjetasBandeja = ({ cuotasPendientes, fetchCuotas, setIsCreating, current
                       <Pencil size={18} />
                     </button>
                   </div>
-                </div>
+                  </div>
+                </motion.div>
               ))}
+              </AnimatePresence>
             </div>
           )}
         </div>

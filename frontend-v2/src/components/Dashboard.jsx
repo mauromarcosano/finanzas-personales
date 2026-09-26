@@ -1,5 +1,6 @@
 import React from 'react';
 import { Wallet, CreditCard, TrendingUp, PieChart, Filter, AlertCircle, Plus, Pencil, Trash2 } from 'lucide-react';
+import { motion, AnimatePresence } from 'framer-motion';
 
 const Dashboard = ({
   totalMes,
@@ -24,7 +25,10 @@ const Dashboard = ({
   return (
     <main className="bento-grid">
       {/* Metric Cards */}
-      <div className="glass-card card-total">
+      <motion.div 
+        initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.3 }}
+        className="glass-card card-total"
+      >
         <div className="card-title">
           <Wallet size={16} color="#8b5cf6" />
           Dinero Total Del Mes
@@ -33,9 +37,12 @@ const Dashboard = ({
           <span className="currency">$</span>
           {totalMes.toLocaleString('es-AR', { maximumFractionDigits: 0 })}
         </div>
-      </div>
+      </motion.div>
 
-      <div className="glass-card card-tarjeta">
+      <motion.div 
+        initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.3, delay: 0.1 }}
+        className="glass-card card-tarjeta"
+      >
         <div className="card-title" style={{color: '#f97316'}}>
           <CreditCard size={16} color="#f97316" />
           Consumo Tarjeta (Mes)
@@ -44,9 +51,12 @@ const Dashboard = ({
           <span className="currency" style={{color: '#f97316'}}>$</span>
           {totalTarjeta.toLocaleString('es-AR', { maximumFractionDigits: 0 })}
         </div>
-      </div>
+      </motion.div>
 
-      <div className="glass-card card-mayor" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+      <motion.div 
+        initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.3, delay: 0.2 }}
+        className="glass-card card-mayor" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}
+      >
         <div style={{ flex: 1, minWidth: 0, paddingRight: '1rem' }}>
           <div className="card-title">
             <TrendingUp size={16} color="#ef4444" />
@@ -92,10 +102,13 @@ const Dashboard = ({
             <div style={{ fontSize: '0.65rem', color: 'var(--text-muted)', textAlign: 'center', marginTop: '4px', fontWeight: 600 }}>DEL MES</div>
           </div>
         )}
-      </div>
+      </motion.div>
 
       {/* Chart Section */}
-      <div className="glass-card chart-section">
+      <motion.div 
+        initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.3, delay: 0.3 }}
+        className="glass-card chart-section"
+      >
         <div className="card-title mb-4">
           <PieChart size={16} color="#8b5cf6" />
           Distribución por Categorías
@@ -223,10 +236,13 @@ const Dashboard = ({
             );
           })}
         </div>
-      </div>
+      </motion.div>
 
       {/* List Section */}
-      <div className="glass-card list-section">
+      <motion.div 
+        initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.3, delay: 0.4 }}
+        className="glass-card list-section"
+      >
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem', flexWrap: 'wrap', gap: '1rem' }}>
           <div className="card-title" style={{ marginBottom: 0 }}>Últimos Gastos Registrados</div>
           <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
@@ -288,8 +304,17 @@ const Dashboard = ({
           </div>
         ) : (
           <div className="expense-list">
+            <AnimatePresence>
             {filteredGastos.map(g => (
-              <div className="expense-item" key={g.id}>
+              <motion.div 
+                layout
+                initial={{ opacity: 0, y: 20, scale: 0.95 }}
+                animate={{ opacity: 1, y: 0, scale: 1 }}
+                exit={{ opacity: 0, scale: 0.95, y: -20 }}
+                transition={{ duration: 0.2 }}
+                className="expense-item" 
+                key={g.id}
+              >
                 <div className="expense-info">
                     <div className="expense-desc">
                       {g.descripcion} {g.metodo_pago === 'Tarjeta_Credito' && <span title="Tarjeta de Crédito" style={{fontSize:'0.8rem'}}>💳</span>}
@@ -334,11 +359,12 @@ const Dashboard = ({
                     </button>
                   </div>
                 </div>
-              </div>
+              </motion.div>
             ))}
+            </AnimatePresence>
           </div>
         )}
-      </div>
+      </motion.div>
     </main>
   );
 };

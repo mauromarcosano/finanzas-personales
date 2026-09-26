@@ -1,4 +1,5 @@
 import { useState, useMemo, useRef, useEffect } from 'react';
+import { toast } from 'sonner';
 import { API_BASE } from '../../config';
 import { 
   X, 
@@ -122,13 +123,14 @@ export default function ConfigModal({ isOpen, onClose, categorias, setCategorias
       if (res.ok) {
         setCategorias(newConfig);
         setSaveSuccess(true);
+        toast.success('¡Configuración guardada!');
         setTimeout(() => setSaveSuccess(false), 2000);
       } else {
-        alert('Error al guardar la configuración');
+        toast.error('Error al guardar la configuración');
       }
     } catch (e) {
       console.error(e);
-      alert('Error de conexión con el servidor');
+      toast.error('Error de conexión con el servidor');
     } finally {
       setSaving(false);
     }

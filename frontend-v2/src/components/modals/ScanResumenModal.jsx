@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { FileText, Upload, Sparkles, CheckCircle2, AlertCircle, X, Check, RefreshCw, ChevronRight } from 'lucide-react';
+import { toast } from 'sonner';
 import { API_BASE } from '../../config';
 
 const API_URL = `${API_BASE}/api/ai`;
@@ -110,7 +111,7 @@ const ScanResumenModal = ({ isOpen, onClose, onImportSuccess }) => {
     const selectedList = scanResult.items.filter(item => itemsToImport[item.id]);
 
     if (selectedList.length === 0) {
-      alert('Por favor seleccioná al menos 1 consumo para importar.');
+      toast.error('Por favor seleccioná al menos 1 consumo para importar.');
       return;
     }
 
@@ -127,16 +128,16 @@ const ScanResumenModal = ({ isOpen, onClose, onImportSuccess }) => {
 
       if (res.ok) {
         const resultData = await res.json();
-        alert(`🎉 ${resultData.message}`);
+        toast.success(`🎉 ${resultData.message}`);
         if (onImportSuccess) onImportSuccess();
         onClose();
       } else {
         const errJson = await res.json();
-        alert(`Error importando: ${errJson.error || 'Intentalo nuevamente'}`);
+        toast.error(`Error importando: ${errJson.error || 'Intentalo nuevamente'}`);
       }
     } catch (err) {
       console.error('Error al importar:', err);
-      alert('Error de conexión al importar los gastos.');
+      toast.error('Error de conexión al importar los gastos.');
     } finally {
       setImporting(false);
     }
