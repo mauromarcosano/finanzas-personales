@@ -277,7 +277,10 @@ function App() {
     <div className="dashboard-container">
       <header className="app-header">
         <div className="app-header-title">
-          <h1><Wallet size={32} color="var(--primary)" /> Mis Finanzas</h1>
+          <h1 style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+            <img src="/logo.jpg" alt="Logo" style={{ width: '48px', height: '48px', borderRadius: '12px', objectFit: 'cover' }} />
+            Mis Finanzas
+          </h1>
           <div className="subtitle">Estado Financiero en Tiempo Real</div>
         </div>
         
