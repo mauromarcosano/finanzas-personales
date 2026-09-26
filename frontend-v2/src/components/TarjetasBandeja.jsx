@@ -321,7 +321,6 @@ const TarjetasBandeja = ({ cuotasPendientes, fetchCuotas, setIsCreating, current
                       <Pencil size={18} />
                     </button>
                   </div>
-                  </div>
                 </motion.div>
               ))}
               </AnimatePresence>
