@@ -98,82 +98,8 @@ function App() {
   }, [currentDate, isAuthenticated]);
 
   const displayGastos = useMemo(() => {
-    const today = new Date();
-    const currentYear = today.getFullYear();
-    const currentMonth = today.getMonth();
-
-    const selectedYear = currentDate.getFullYear();
-    const selectedMonth = currentDate.getMonth();
-
-    const isFutureMonth = (selectedYear > currentYear) || (selectedYear === currentYear && selectedMonth > currentMonth);
-
-    // En el mes actual o meses pasados, el Dashboard solo muestra gastos reales pagados
-    if (!isFutureMonth) {
-      return gastos;
-    }
-
-    // En meses futuros, proyectamos cuotas pendientes y suscripciones para prever el presupuesto venidero
-    const list = [...gastos];
-
-    const parseLocalDate = (dateVal) => {
-      if (!dateVal) return new Date();
-      if (dateVal instanceof Date) return dateVal;
-      
-      const dateStr = String(dateVal);
-      if (/^\d{4}-\d{2}-\d{2}/.test(dateStr)) {
-        const parts = dateStr.split(/[-T :]/);
-        const year = parseInt(parts[0], 10);
-        const month = parseInt(parts[1], 10) - 1;
-        const day = parseInt(parts[2], 10);
-        return new Date(year, month, day, 12, 0, 0);
-      }
-      
-      return new Date(dateStr);
-    };
-
-    const getCuotaYearMonth = (fechaCompraStr, numeroCuota, cuotaInicial = 1) => {
-      const fc = parseLocalDate(fechaCompraStr);
-      const offset = numeroCuota - (cuotaInicial || 1);
-      const targetDate = new Date(fc.getFullYear(), fc.getMonth() + offset, 15);
-      return { year: targetDate.getFullYear(), month: targetDate.getMonth() };
-    };
-
-    cuotasPendientes.forEach(c => {
-      if (c.estado === 'Pendiente') {
-        const { year, month } = getCuotaYearMonth(c.fecha_compra, c.numero_cuota, c.cuota_inicial || 1);
-        if (year === selectedYear && month === selectedMonth) {
-          const desc = c.cuotas_totales > 1 ? `${c.descripcion} (Cuota ${c.numero_cuota}/${c.cuotas_totales})` : c.descripcion;
-          if (!list.some(g => g.descripcion === desc)) {
-            list.push({
-              id: `proj-cuota-${c.cuota_id}`,
-              descripcion: desc,
-              monto: parseFloat(c.monto),
-              categoria: c.categoria || 'Otros',
-              subcategoria: c.subcategoria || 'Otros',
-              metodo_pago: 'Tarjeta_Credito',
-              fecha: new Date(year, month, 1).toISOString()
-            });
-          }
-        }
-      }
-    });
-
-    suscripciones.forEach(sub => {
-      if (!list.some(g => g.descripcion.includes(sub.descripcion))) {
-        list.push({
-          id: `proj-sub-${sub.id}`,
-          descripcion: `${sub.descripcion} (Fijo)`,
-          monto: parseFloat(sub.monto),
-          categoria: sub.categoria || 'Otros',
-          subcategoria: sub.subcategoria || 'Otros',
-          metodo_pago: 'Tarjeta_Credito',
-          fecha: new Date(selectedYear, selectedMonth, 1).toISOString()
-        });
-      }
-    });
-
-    return list;
-  }, [gastos, cuotasPendientes, suscripciones, currentDate]);
+    return gastos;
+  }, [gastos]);
 
   const { totalMes, totalTarjeta, chartData, mayorGasto, uniqueCategories, uniqueSubCategories } = useMemo(() => {
     const categoryTotals = {};
