@@ -94,11 +94,16 @@ const TarjetasBandeja = ({ cuotasPendientes, fetchCuotas, setIsCreating, current
     if (!window.confirm('¿Estás seguro que querés liquidar todo el resumen actual? Se moverán a Gastos y se generarán las próximas cuotas.')) return;
     setIsLiquidating(true);
     try {
-      const res = await fetch(`${API_URL}/cuotas/liquidar_mes`, { method: 'POST' });
+      const cuotasIds = cuotasActivas.map(c => c.cuota_id);
+      const res = await fetch(`${API_URL}/cuotas/liquidar_mes`, { 
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ cuotasIds })
+      });
       if (res.ok) {
-        alert('¡Resumen liquidado con éxito! Por favor, ingresá las fechas del PRÓXIMO resumen.');
+        alert('¡Resumen liquidado con éxito! Las fechas de cierre se adelantaron al mes que viene.');
         fetchCuotas(); 
-        setIsConfiguring(true); // Abrir config para el próximo mes
+        fetchConfig();
       } else {
         alert('Error liquidando resumen');
       }
@@ -173,11 +178,19 @@ const TarjetasBandeja = ({ cuotasPendientes, fetchCuotas, setIsCreating, current
   // Cálculo de días exacto
   let daysToCierre = 0;
   let isClosed = false;
+  let isAlreadyPaid = false;
+  
   if (config.fecha_cierre) {
     const today = new Date();
     today.setHours(0,0,0,0);
     const [y, m, d] = config.fecha_cierre.split('-');
     const cierreDate = new Date(y, m - 1, d);
+    
+    // Verificamos si el mes seleccionado ya quedó atrás respecto al cierre
+    if (selectedYear < cierreDate.getFullYear() || (selectedYear === cierreDate.getFullYear() && selectedMonth < cierreDate.getMonth())) {
+      isAlreadyPaid = true;
+    }
+
     daysToCierre = Math.floor((cierreDate - today) / (1000 * 60 * 60 * 24));
     if (daysToCierre < 0) isClosed = true;
   }
@@ -233,7 +246,7 @@ const TarjetasBandeja = ({ cuotasPendientes, fetchCuotas, setIsCreating, current
             </div>
           </div>
 
-          {isCurrentCalendarMonth && (
+          {isCurrentCalendarMonth && !isAlreadyPaid && (
             <button 
               className="primary" 
               style={{ padding: '1rem 2rem', fontSize: '1rem', display: 'flex', alignItems: 'center', gap: '0.5rem', background: '#22c55e' }}
@@ -243,6 +256,12 @@ const TarjetasBandeja = ({ cuotasPendientes, fetchCuotas, setIsCreating, current
               {isLiquidating ? <CheckCircle2 size={20} className="spinner" /> : <Zap size={20} />}
               {isLiquidating ? 'Liquidando...' : '¡Pagar Resumen Ahora!'}
             </button>
+          )}
+
+          {(isAlreadyPaid || (!isCurrentCalendarMonth && selectedMonth < today.getMonth())) && (
+            <div style={{ padding: '0.5rem 1rem', fontSize: '0.9rem', color: '#10b981', background: 'rgba(16, 185, 129, 0.1)', border: '1px solid rgba(16, 185, 129, 0.3)', borderRadius: '0.5rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+              <CheckCircle2 size={16} /> Resumen Pagado
+            </div>
           )}
         </div>
 

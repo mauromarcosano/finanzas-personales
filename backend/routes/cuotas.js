@@ -102,18 +102,29 @@ router.put('/:id', async (req, res) => {
 
 // Liquidar todo el resumen (Cuotas Pendientes + Suscripciones)
 router.post('/liquidar_mes', async (req, res) => {
+  const { cuotasIds } = req.body || {};
   const client = await pool.connect();
   try {
     await client.query('BEGIN');
     
-    // 1. Obtener la cuota pendiente más baja de cada compra
-    const cuotasRes = await client.query(`
-      SELECT DISTINCT ON (c.id) ct.id, ct.monto, ct.estado, ct.numero_cuota, c.id as compra_id, c.descripcion, c.categoria, c.subcategoria, c.chat_id, c.cuotas_totales
-      FROM cuotas_tarjeta ct
-      JOIN compras_tarjeta c ON ct.compra_id = c.id
-      WHERE ct.estado = 'Pendiente'
-      ORDER BY c.id, ct.numero_cuota ASC
-    `);
+    let cuotasRes;
+    if (cuotasIds && Array.isArray(cuotasIds) && cuotasIds.length > 0) {
+      cuotasRes = await client.query(`
+        SELECT ct.id, ct.monto, ct.estado, ct.numero_cuota, c.id as compra_id, c.descripcion, c.categoria, c.subcategoria, c.chat_id, c.cuotas_totales
+        FROM cuotas_tarjeta ct
+        JOIN compras_tarjeta c ON ct.compra_id = c.id
+        WHERE ct.id = ANY($1::int[]) AND ct.estado = 'Pendiente'
+      `, [cuotasIds]);
+    } else {
+      // 1. Obtener la cuota pendiente más baja de cada compra (fallback)
+      cuotasRes = await client.query(`
+        SELECT DISTINCT ON (c.id) ct.id, ct.monto, ct.estado, ct.numero_cuota, c.id as compra_id, c.descripcion, c.categoria, c.subcategoria, c.chat_id, c.cuotas_totales
+        FROM cuotas_tarjeta ct
+        JOIN compras_tarjeta c ON ct.compra_id = c.id
+        WHERE ct.estado = 'Pendiente'
+        ORDER BY c.id, ct.numero_cuota ASC
+      `);
+    }
     
     // 2. Obtener todas las suscripciones
     const suscripcionesRes = await client.query('SELECT * FROM suscripciones');
@@ -160,6 +171,25 @@ router.post('/liquidar_mes', async (req, res) => {
       gastosGenerados.push(gastoRes.rows[0]);
     }
     
+    // 3. Avanzar fechas en tarjeta_config
+    const configRes = await client.query('SELECT fecha_cierre, fecha_vencimiento FROM tarjeta_config WHERE id = 1');
+    if (configRes.rows.length > 0) {
+      const config = configRes.rows[0];
+      if (config.fecha_cierre) {
+        const dC = new Date(config.fecha_cierre + 'T00:00:00');
+        dC.setMonth(dC.getMonth() + 1);
+        const newCierre = dC.toISOString().split('T')[0];
+        
+        let newVenc = null;
+        if (config.fecha_vencimiento) {
+          const dV = new Date(config.fecha_vencimiento + 'T00:00:00');
+          dV.setMonth(dV.getMonth() + 1);
+          newVenc = dV.toISOString().split('T')[0];
+        }
+        await client.query('UPDATE tarjeta_config SET fecha_cierre = $1, fecha_vencimiento = $2 WHERE id = 1', [newCierre, newVenc]);
+      }
+    }
+
     await client.query('COMMIT');
     
     // Sincronizar todo a Sheets

@@ -282,9 +282,13 @@ const initWhatsAppBot = () => {
     console.log('✅ Bot de WhatsApp inicializado y listo!');
   });
 
-  client.on('message', async (msg) => {
-    // Only respond to private messages, not group messages unless specified
-    if (msg.from.includes('@g.us')) return;
+  // Usamos 'message_create' para poder leer los mensajes que envías vos mismo.
+  client.on('message_create', async (msg) => {
+    // Solo responder si el mensaje es enviado a VOS MISMO (el chat "Tú")
+    if (msg.from !== msg.to) return;
+    
+    // Ignorar estados o grupos
+    if (msg.from === 'status@broadcast' || msg.from.includes('@g.us')) return;
 
     // Use a numeric format for chatId to match PostgreSQL schema (BIGINT)
     // We can use the hash of the phone number or just string stripped of non-digits
