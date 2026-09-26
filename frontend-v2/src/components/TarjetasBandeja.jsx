@@ -1,7 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { CreditCard, Plus, Calendar, Clock, CheckCircle2, Trash2, Zap, Pencil } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
-import CountUp from 'react-countup';
+import ReactCountUp from 'react-countup';
+const CountUp = ReactCountUp.default || ReactCountUp;
 import confetti from 'canvas-confetti';
 import { toast } from 'sonner';
 import { API_BASE } from '../config';

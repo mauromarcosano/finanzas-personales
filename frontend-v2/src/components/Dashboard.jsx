@@ -1,7 +1,8 @@
 import React from 'react';
 import { Wallet, CreditCard, TrendingUp, PieChart, Filter, AlertCircle, Plus, Pencil, Trash2 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
-import CountUp from 'react-countup';
+import ReactCountUp from 'react-countup';
+const CountUp = ReactCountUp.default || ReactCountUp;
 
 const Dashboard = ({
   totalMes,
@@ -22,7 +23,6 @@ const Dashboard = ({
   handleDelete
 }) => {
   const [hoveredSlice, setHoveredSlice] = React.useState(null);
-
   return (
     <main className="bento-grid">
       {/* Metric Cards */}
